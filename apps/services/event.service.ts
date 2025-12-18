@@ -22,6 +22,15 @@ interface EventReqBody {
   id: string;
 }
 
+class ServiceError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
 export const eventService = {
   async create({ event, user }: CreateEventInput) {
     if (!user.sub) {
@@ -110,35 +119,51 @@ export const eventService = {
     session.startTransaction();
 
     try {
+      const userId = new Types.ObjectId(user.sub);
+      const eventId = new Types.ObjectId(id);
+
+      const isCreator = await EventUserRepository.hasUserCreatedEvent(
+        userId,
+        eventId
+      );
+
+      if (isCreator) {
+        throw new ServiceError(
+          "Event creator cannot join their own event",
+          403
+        );
+      }
+
+      await EventUserRepository.createIfNotExists(userId, session);
+
       const joinResult = await EventUserRepository.joinEvent(
-        new Types.ObjectId(user.sub),
-        new Types.ObjectId(id),
+        userId,
+        eventId,
         session
       );
 
       if (joinResult.matchedCount === 0) {
-        throw new Error("User already joined");
+        throw new ServiceError("User already joined", 409);
       }
 
-      const seatResult = await EventRepository.bookSeat(
-        new Types.ObjectId(id),
-        session
-      );
+      const seatResult = await EventRepository.bookSeat(eventId, session);
 
       if (seatResult.modifiedCount === 0) {
-        throw new Error("Event full");
+        throw new ServiceError("Event full", 409);
       }
 
       await session.commitTransaction();
-    } catch (err) {
+    } catch (err: any) {
       await session.abortTransaction();
 
-      await EventUserRepository.leaveEvent(
-        new Types.ObjectId(user.sub),
-        new Types.ObjectId(id)
-      );
+      if (err instanceof ServiceError) throw err;
+
+      throw new ServiceError("Internal server error", 500);
+    } finally {
+      session.endSession();
     }
   },
+
   async leaveEvent({ user, id }: EventReqBody) {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -151,15 +176,21 @@ export const eventService = {
       );
 
       if (leaveResult.matchedCount === 0) {
-        throw new Error("NotJoined");
+        throw new ServiceError("NotJoined", 409);
       }
 
       await EventRepository.releaseSeat(new Types.ObjectId(id), session);
-
       await session.commitTransaction();
-    } catch (err) {
+    } catch (err: any) {
       await session.abortTransaction();
-      throw err;
+
+      if (err instanceof ServiceError) throw err;
+
+      if (err.name === "CastError") {
+        throw new ServiceError("Invalid Event Id", 400);
+      }
+
+      throw new ServiceError("Internal server error", 500);
     } finally {
       session.endSession();
     }

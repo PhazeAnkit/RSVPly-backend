@@ -6,6 +6,22 @@ export const EventUserRepository = {
   create: (data: Partial<IEventUser>, session?: mongoose.ClientSession) =>
     EventUserModel.create([data], { session }).then((res) => res[0]),
 
+  createIfNotExists: (
+    userId: Types.ObjectId,
+    session?: mongoose.ClientSession
+  ) =>
+    EventUserModel.updateOne(
+      { userId },
+      {
+        $setOnInsert: {
+          userId,
+          eventsJoined: [],
+          eventsCreated: [],
+        },
+      },
+      { upsert: true, session }
+    ),
+
   addEvent: (
     userId: Types.ObjectId,
     eventId: Types.ObjectId,
@@ -41,7 +57,7 @@ export const EventUserRepository = {
       {
         $addToSet: { eventsJoined: eventId },
       },
-      { upsert: true, session }
+      { session }
     ),
 
   leaveEvent: (
@@ -52,7 +68,7 @@ export const EventUserRepository = {
     EventUserModel.updateOne(
       {
         userId,
-        eventsJoined: eventId, // must exist
+        eventsJoined: eventId,
       },
       {
         $pull: { eventsJoined: eventId },
@@ -65,10 +81,7 @@ export const EventUserRepository = {
     eventId: Types.ObjectId
   ): Promise<boolean> => {
     const result = await UserModel.aggregate([
-      {
-        $match: { _id: userId },
-      },
-
+      { $match: { _id: userId } },
       {
         $lookup: {
           from: "eventusers",
@@ -77,14 +90,7 @@ export const EventUserRepository = {
           as: "eventUser",
         },
       },
-
-      {
-        $unwind: {
-          path: "$eventUser",
-          preserveNullAndEmptyArrays: false,
-        },
-      },
-
+      { $unwind: "$eventUser" },
       {
         $project: {
           _id: 0,

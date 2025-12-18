@@ -8,7 +8,7 @@ function signHS256(data: string) {
     throw new Error("JWT_SECRET is not defined");
   }
   return crypto
-    .createHmac("HS256", JWT_SECRET)
+    .createHmac("sha256", JWT_SECRET)
     .update(data)
     .digest("base64url");
 }

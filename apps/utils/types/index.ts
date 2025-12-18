@@ -1,5 +1,7 @@
+import { Types } from "mongoose";
+
 export type userToken = {
-  sub?: number;
+  sub: Types.ObjectId;
   email: string;
   iat: number;
   exp: number;

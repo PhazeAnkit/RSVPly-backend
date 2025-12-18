@@ -53,7 +53,7 @@ export const authController = {
       if (error.message === "Invalid credentials") {
         return res.status(401).json({ error: error.message });
       }
-
+      console.log(error.message);
       return res.status(500).json({
         error: "Something went wrong",
       });

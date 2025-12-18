@@ -1,0 +1,115 @@
+import { Request, Response } from "express";
+import { eventService } from "../services/event.service";
+
+export const eventController = {
+  async create(req: Request, res: Response) {
+    const {
+      eventCapacity,
+      bookedCount,
+      eventTime,
+      bookingClose,
+      description,
+      location,
+      meetingLink,
+    } = req.body;
+
+    const user = req.user;
+
+    if (!user || !user.sub) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (
+      eventCapacity === undefined ||
+      bookedCount === undefined ||
+      !eventTime ||
+      !bookingClose ||
+      !description
+    ) {
+      return res.status(400).json({ error: "Missing required field" });
+    }
+
+    try {
+      const response = await eventService.create({
+        event: {
+          eventCapacity,
+          bookedCount,
+          eventTime,
+          bookingClose,
+          description,
+          location,
+          meetingLink,
+        },
+        user,
+      });
+
+      return res.status(201).json({ data: response });
+    } catch (error) {
+      if (error instanceof Error) {
+        const status = error.message === "Unauthorized" ? 401 : 500;
+        return res.status(status).json({ error: error.message });
+      }
+      return res.status(500).json({ error: "Server error" });
+    }
+  },
+
+  async getById(req: Request, res: Response) {
+    const { id } = req.params;
+    if (!id) return res.status(401).json({ error: "Invalid Id" });
+    try {
+      const event = await eventService.getById(id);
+      return res.status(200).json({ data: event });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+  },
+
+  async deleteEvent(req: Request, res: Response) {
+    const { id } = req.params;
+    const user = req.user;
+
+    if (!user || !user.sub) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: "Invalid Id" });
+    }
+
+    console.log(user.sub, id);
+
+    try {
+      const response = await eventService.deleteEvent({
+        user,
+        id,
+      });
+
+      return res.status(200).json({
+        message: "Event deleted successfully",
+        data: response,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        switch (error.message) {
+          case "Unauthorized":
+            return res.status(401).json({ error: "Unauthorized" });
+
+          case "Forbidden":
+            return res.status(403).json({
+              error: "You are not allowed to delete this event",
+            });
+
+          case "EventNotFound":
+            return res.status(404).json({ error: "Event not found" });
+
+          default:
+            return res.status(500).json({ error: "Server error" });
+        }
+      }
+
+      return res.status(500).json({ error: "Server error" });
+    }
+  },
+};

@@ -33,10 +33,15 @@ export const EventUserRepository = {
     eventId: Types.ObjectId,
     session?: mongoose.ClientSession
   ) =>
-    EventUserModel.findOneAndUpdate(
-      { userId },
-      { $addToSet: { eventsJoined: eventId } },
-      { upsert: true, new: true, session }
+    EventUserModel.updateOne(
+      {
+        userId,
+        eventsJoined: { $ne: eventId },
+      },
+      {
+        $addToSet: { eventsJoined: eventId },
+      },
+      { upsert: true, session }
     ),
 
   leaveEvent: (
@@ -44,10 +49,15 @@ export const EventUserRepository = {
     eventId: Types.ObjectId,
     session?: mongoose.ClientSession
   ) =>
-    EventUserModel.findOneAndUpdate(
-      { userId },
-      { $pull: { eventsJoined: eventId } },
-      { new: true, session }
+    EventUserModel.updateOne(
+      {
+        userId,
+        eventsJoined: eventId, // must exist
+      },
+      {
+        $pull: { eventsJoined: eventId },
+      },
+      { session }
     ),
 
   hasUserCreatedEvent: async (

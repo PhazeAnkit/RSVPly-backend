@@ -23,4 +23,24 @@ export const EventRepository = {
       { $set: data },
       { new: true, runValidators: true, session }
     ).exec(),
+  bookSeat: (eventId: Types.ObjectId, session?: mongoose.ClientSession) =>
+    EventModel.updateOne(
+      {
+        _id: eventId,
+        $expr: { $lt: ["$bookedCount", "$eventCapacity"] },
+      },
+      {
+        $inc: { bookedCount: 1 },
+      },
+      { session }
+    ),
+  releaseSeat: (eventId: Types.ObjectId, session?: mongoose.ClientSession) =>
+    EventModel.updateOne(
+      {
+        _id: eventId,
+        bookedCount: { $gt: 0 },
+      },
+      { $inc: { bookedCount: -1 } },
+      { session }
+    ),
 };

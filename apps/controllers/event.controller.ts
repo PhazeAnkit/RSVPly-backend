@@ -78,8 +78,6 @@ export const eventController = {
       return res.status(400).json({ error: "Invalid Id" });
     }
 
-    console.log(user.sub, id);
-
     try {
       const response = await eventService.deleteEvent({
         user,
@@ -99,6 +97,83 @@ export const eventController = {
           case "Forbidden":
             return res.status(403).json({
               error: "You are not allowed to delete this event",
+            });
+
+          case "EventNotFound":
+            return res.status(404).json({ error: "Event not found" });
+
+          default:
+            return res.status(500).json({ error: "Server error" });
+        }
+      }
+
+      return res.status(500).json({ error: "Server error" });
+    }
+  },
+
+  async joinEvent(req: Request, res: Response) {
+    const { id } = req.params;
+    const user = req.user;
+
+    if (!user || !user.sub) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: "Invalid Id" });
+    }
+
+    try {
+      await eventService.joinEvent({ user, id });
+
+      return res.status(200).json({
+        message: "Event joined successfully",
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        switch (error.message) {
+          case "User already joined":
+            return res.status(409).json({ error: error.message });
+
+          case "Event full":
+            return res.status(409).json({ error: error.message });
+
+          case "EventNotFound":
+            return res.status(404).json({ error: "Event not found" });
+
+          default:
+            return res.status(500).json({ error: "Server error" });
+        }
+      }
+
+      return res.status(500).json({ error: "Server error" });
+    }
+  },
+  async leaveEvent(req: Request, res: Response) {
+    const { id } = req.params;
+    const user = req.user;
+
+    if (!user || !user.sub) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: "Invalid Id" });
+    }
+
+    try {
+      const response = await eventService.leaveEvent({ user, id });
+
+      return res.status(200).json({
+        message: "Left event successfully",
+        data: response,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        switch (error.message) {
+          case "NotJoined":
+            return res.status(409).json({
+              error: "User has not joined this event",
             });
 
           case "EventNotFound":

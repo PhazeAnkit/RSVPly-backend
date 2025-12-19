@@ -7,6 +7,7 @@ import connectDB from "./utils/db";
 
 const app = express();
 
+// DB connection
 app.use(async (_req, _res, next) => {
   try {
     await connectDB();
@@ -16,15 +17,17 @@ app.use(async (_req, _res, next) => {
   }
 });
 
+// CORS — this ALREADY handles preflight
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://your-frontend.vercel.app"],
+    origin: [
+      "http://localhost:3000",
+      "https://your-frontend.vercel.app",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -115,10 +115,9 @@ export const eventService = {
   },
 
   async getAll() {
-  const events = await EventRepository.findAll();
-  return events;
-},
-
+    const events = await EventRepository.findAll();
+    return events;
+  },
 
   async joinEvent({ user, id }: EventReqBody) {
     const session = await mongoose.startSession();
@@ -200,5 +199,27 @@ export const eventService = {
     } finally {
       session.endSession();
     }
+  },
+
+  async getDashboard(user: userToken) {
+    if (!user.sub) {
+      throw new Error("Unauthorized");
+    }
+
+    const userId = new Types.ObjectId(user.sub);
+
+    const dashboard = await EventUserRepository.getDashboardData(userId);
+
+    if (!dashboard) {
+      return {
+        createdEvents: [],
+        joinedEvents: [],
+      };
+    }
+
+    return {
+      createdEvents: dashboard.eventsCreated || [],
+      joinedEvents: dashboard.eventsJoined || [],
+    };
   },
 };

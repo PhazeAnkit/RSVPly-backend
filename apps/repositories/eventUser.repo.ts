@@ -80,27 +80,22 @@ export const EventUserRepository = {
     userId: Types.ObjectId,
     eventId: Types.ObjectId
   ): Promise<boolean> => {
-    const result = await UserModel.aggregate([
-      { $match: { _id: userId } },
-      {
-        $lookup: {
-          from: "eventusers",
-          localField: "_id",
-          foreignField: "userId",
-          as: "eventUser",
-        },
-      },
-      { $unwind: "$eventUser" },
-      {
-        $project: {
-          _id: 0,
-          isCreator: {
-            $in: [eventId, "$eventUser.eventsCreated"],
-          },
-        },
-      },
-    ]);
+    const exists = await EventUserModel.findOne({
+      userId: userId,
+      eventsCreated: eventId,
+    }).select("_id");
 
-    return result.length > 0 && result[0].isCreator === true;
+    return !!exists;
+  },
+  getDashboardData: async (userId: Types.ObjectId) => {
+    return EventUserModel.findOne({ userId })
+      .populate(
+        "eventsCreated",
+        "description eventTime location bookedCount eventCapacity"
+      )
+      .populate(
+        "eventsJoined",
+        "description eventTime location bookedCount eventCapacity"
+      ).lean();
   },
 };

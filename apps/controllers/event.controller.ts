@@ -155,7 +155,12 @@ export const eventController = {
   },
   async dashboard(req: Request, res: Response) {
     try {
-      const data = await eventService.getDashboard(req.user);
+      const user = req.user;
+
+      if (!user || !user.sub) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const data = await eventService.getDashboard(user);
 
       return res.status(200).json({
         data,

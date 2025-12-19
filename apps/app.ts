@@ -3,21 +3,28 @@ import cors from "cors";
 import healthRouter from "./routes/health.routes";
 import authRouter from "./routes/auth.routes";
 import eventRouter from "./routes/event.routes";
+import connectDB from "./utils/db";
 
 const app = express();
 
-const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "https://your-frontend.vercel.app", // replace
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+app.use(async (_req, _res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://your-frontend.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-app.options("*", cors(corsOptions));
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

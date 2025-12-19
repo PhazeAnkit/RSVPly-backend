@@ -8,6 +8,13 @@ export const EventRepository = {
   delete: (id: Types.ObjectId, session?: mongoose.ClientSession) =>
     EventModel.deleteOne({ _id: id }).session(session || null),
 
+  findAll: (session?: mongoose.ClientSession) =>
+  EventModel.find({})
+    .sort({ createdAt: -1 })
+    .session(session || null)
+    .exec(),
+
+
   findById: (id: Types.ObjectId, session?: mongoose.ClientSession) =>
     EventModel.findById(id)
       .session(session || null)

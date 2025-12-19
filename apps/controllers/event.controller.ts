@@ -110,7 +110,14 @@ export const eventController = {
       return res.status(500).json({ error: "Server error" });
     }
   },
-
+  async getAll(req: Request, res: Response) {
+    try {
+      const events = await eventService.getAll();
+      return res.status(200).json({ data: events });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch events" });
+    }
+  },
   async joinEvent(req: Request, res: Response) {
     const { id } = req.params;
     const user = req.user;

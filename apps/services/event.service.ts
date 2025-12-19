@@ -114,6 +114,12 @@ export const eventService = {
     }
   },
 
+  async getAll() {
+  const events = await EventRepository.findAll();
+  return events;
+},
+
+
   async joinEvent({ user, id }: EventReqBody) {
     const session = await mongoose.startSession();
     session.startTransaction();

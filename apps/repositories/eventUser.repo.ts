@@ -1,6 +1,11 @@
 import mongoose, { Types } from "mongoose";
 import { EventUserModel, IEventUser } from "../models/eventUserRelation.model";
-import { UserModel } from "../models/user.model";
+import { IEvent } from "../models/event.model";
+
+type DashboardDoc = {
+  eventsCreated: IEvent[];
+  eventsJoined: IEvent[];
+};
 
 export const EventUserRepository = {
   create: (data: Partial<IEventUser>, session?: mongoose.ClientSession) =>
@@ -87,15 +92,12 @@ export const EventUserRepository = {
 
     return !!exists;
   },
-  getDashboardData: async (userId: Types.ObjectId) => {
+  getDashboardData: async (
+    userId: Types.ObjectId
+  ): Promise<DashboardDoc | null> => {
     return EventUserModel.findOne({ userId })
-      .populate(
-        "eventsCreated",
-        "description eventTime location bookedCount eventCapacity"
-      )
-      .populate(
-        "eventsJoined",
-        "description eventTime location bookedCount eventCapacity"
-      ).lean();
+      .populate<{ eventsCreated: IEvent[] }>("eventsCreated")
+      .populate<{ eventsJoined: IEvent[] }>("eventsJoined")
+      .lean();
   },
 };

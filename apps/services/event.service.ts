@@ -202,24 +202,28 @@ export const eventService = {
   },
 
   async getDashboard(user: userToken) {
-    if (!user.sub) {
-      throw new Error("Unauthorized");
-    }
+    if (!user.sub) throw new Error("Unauthorized");
 
     const userId = new Types.ObjectId(user.sub);
-
     const dashboard = await EventUserRepository.getDashboardData(userId);
 
-    if (!dashboard) {
-      return {
-        createdEvents: [],
-        joinedEvents: [],
-      };
-    }
+    const createdEvents = dashboard?.eventsCreated || [];
+    const joinedEvents = dashboard?.eventsJoined || [];
+
+    const now = new Date();
+
+    const upcomingEvents = [...createdEvents, ...joinedEvents].filter(
+      (e) => new Date(e.eventTime) > now && new Date(e.bookingClose) > now
+    );
 
     return {
-      createdEvents: dashboard.eventsCreated || [],
-      joinedEvents: dashboard.eventsJoined || [],
+      createdEvents,
+      joinedEvents,
+      counts: {
+        created: createdEvents.length,
+        joined: joinedEvents.length,
+        upcoming: upcomingEvents.length,
+      },
     };
   },
 };

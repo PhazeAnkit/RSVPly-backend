@@ -21,7 +21,6 @@ export const eventController = {
 
     if (
       eventCapacity === undefined ||
-      bookedCount === undefined ||
       !eventTime ||
       !bookingClose ||
       !description
